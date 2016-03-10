@@ -37,7 +37,7 @@ import java.util.Objects;
 public class Machine {
 
     public static final String TERMINAL_REF_KEY   = "terminal";
-    public static final String EXTENSIONS_REF_KEY = "extensions";
+    public static final String EXTENSIONS_REF_KEY = "workspace-agent";
 
     private final MachineDto    descriptor;
     private final EntityFactory entityFactory;
