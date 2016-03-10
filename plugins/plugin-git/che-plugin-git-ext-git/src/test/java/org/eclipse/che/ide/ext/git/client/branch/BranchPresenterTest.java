@@ -128,14 +128,14 @@ public class BranchPresenterTest extends BaseTest {
                                         dialogFactory,
                                         eventBus);
 
-        NavigableMap<String, EditorPartPresenter> partPresenterMap = new TreeMap<>();
-        partPresenterMap.put("partPresenter", partPresenter);
+        List<EditorPartPresenter> partPresenterList = new ArrayList<>();
+        partPresenterList.add(partPresenter);
 
         when(selectedBranch.getDisplayName()).thenReturn(BRANCH_NAME);
         when(selectedBranch.getName()).thenReturn(BRANCH_NAME);
         when(selectedBranch.isRemote()).thenReturn(IS_REMOTE);
         when(selectedBranch.isActive()).thenReturn(IS_ACTIVE);
-        when(editorAgent.getOpenedEditors()).thenReturn(partPresenterMap);
+        when(editorAgent.getOpenedEditors()).thenReturn(partPresenterList);
         when(partPresenter.getEditorInput()).thenReturn(editorInput);
     }
 

@@ -85,15 +85,15 @@ public class PullPresenterTest extends BaseTest {
 
         when(appContext.getWorkspaceId()).thenReturn("id");
 
-        NavigableMap<String, EditorPartPresenter> partPresenterMap = new TreeMap<>();
-        partPresenterMap.put("partPresenter", partPresenter);
+        List<EditorPartPresenter> partPresenterList = new ArrayList<>();
+        partPresenterList.add(partPresenter);
 
         when(view.getRepositoryName()).thenReturn(REPOSITORY_NAME);
         when(view.getRepositoryUrl()).thenReturn(REMOTE_URI);
         when(view.getLocalBranch()).thenReturn(LOCAL_BRANCH);
         when(view.getRemoteBranch()).thenReturn(REMOTE_BRANCH);
         when(branch.getName()).thenReturn(REMOTE_BRANCH);
-        when(editorAgent.getOpenedEditors()).thenReturn(partPresenterMap);
+        when(editorAgent.getOpenedEditors()).thenReturn(partPresenterList);
         when(partPresenter.getEditorInput()).thenReturn(editorInput);
         when(editorInput.getFile()).thenReturn(file);
         when(file.getPath()).thenReturn(FILE_PATH);

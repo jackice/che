@@ -140,11 +140,12 @@ public class MatchNode extends AbstractPresentationNode implements HasAction {
     @Override
     public void actionPerformed() {
         if (compilationUnit != null) {
-            EditorPartPresenter editorPartPresenter = editorAgent.getOpenedEditors().get(compilationUnit.getPath());
-            if (editorPartPresenter != null) {
-                editorAgent.activateEditor(editorPartPresenter);
-                fileOpened(editorPartPresenter);
-                return;
+            for (EditorPartPresenter editorPartPresenter : editorAgent.getOpenedEditors()) {
+                if (editorPartPresenter.getEditorInput().getFile().getPath().equals(compilationUnit.getPath())) {
+                    editorAgent.activateEditor(editorPartPresenter);
+                    fileOpened(editorPartPresenter);
+                    return;
+                }
             }
 
             projectExplorer.getNodeByPath(new HasStorablePath.StorablePath(compilationUnit.getPath()))

@@ -152,7 +152,7 @@ public class RemoveFromIndexPresenter implements RemoveFromIndexView.ActionDeleg
     @Override
     public void onRemoveClicked() {
         openedEditors = new ArrayList<>();
-        for (EditorPartPresenter partPresenter : editorAgent.getOpenedEditors().values()) {
+        for (EditorPartPresenter partPresenter : editorAgent.getOpenedEditors()) {
             openedEditors.add(partPresenter);
         }
         final GitOutputConsole console = gitOutputConsoleFactory.create(REMOVE_FROM_INDEX_COMMAND_NAME);

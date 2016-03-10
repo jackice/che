@@ -66,7 +66,7 @@ public interface EditorAgent {
      * @return map with all opened editors
      */
     @NotNull
-    Map<String, EditorPartPresenter> getOpenedEditors();
+    List<EditorPartPresenter> getOpenedEditors();
 
     /**
      * Saves all opened files whose content have changed since the last save operation

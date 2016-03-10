@@ -88,8 +88,7 @@ public class FileWatcher {
     }
 
     private void reparseAllOpenedFiles() {
-        Map<String, EditorPartPresenter> openedEditors = editorAgent.getOpenedEditors();
-        for (EditorPartPresenter editorPartPresenter: openedEditors.values()) {
+        for (EditorPartPresenter editorPartPresenter: editorAgent.getOpenedEditors()) {
             if (editorPartPresenter instanceof EmbeddedTextEditorPresenter) {
                 final EmbeddedTextEditorPresenter< ? > editor = (EmbeddedTextEditorPresenter< ? >)editorPartPresenter;
                 editor.refreshEditor();

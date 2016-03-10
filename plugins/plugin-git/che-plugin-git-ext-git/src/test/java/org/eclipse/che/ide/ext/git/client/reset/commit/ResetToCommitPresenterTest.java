@@ -90,12 +90,12 @@ public class ResetToCommitPresenterTest extends BaseTest {
                                                gitOutputConsoleFactory,
                                                consolesPanelPresenter);
 
-        NavigableMap<String, EditorPartPresenter> partPresenterMap = new TreeMap<>();
-        partPresenterMap.put("partPresenter", partPresenter);
+        List<EditorPartPresenter> partPresenterList = new ArrayList<>();
+        partPresenterList.add(partPresenter);
 
         when(view.isMixMode()).thenReturn(IS_MIXED);
         when(selectedRevision.getId()).thenReturn(PROJECT_PATH);
-        when(editorAgent.getOpenedEditors()).thenReturn(partPresenterMap);
+        when(editorAgent.getOpenedEditors()).thenReturn(partPresenterList);
         when(partPresenter.getEditorInput()).thenReturn(editorInput);
         when(editorInput.getFile()).thenReturn(file);
         when(file.getPath()).thenReturn(FILE_PATH);

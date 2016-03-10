@@ -171,7 +171,7 @@ public class MergePresenter implements MergeView.ActionDelegate {
         view.close();
 
         final List<EditorPartPresenter> openedEditors = new ArrayList<>();
-        for (EditorPartPresenter partPresenter : editorAgent.getOpenedEditors().values()) {
+        for (EditorPartPresenter partPresenter : editorAgent.getOpenedEditors()) {
             openedEditors.add(partPresenter);
         }
         final GitOutputConsole console = gitOutputConsoleFactory.create(MERGE_COMMAND_NAME);

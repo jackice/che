@@ -184,7 +184,7 @@ public class PullPresenter implements PullView.ActionDelegate {
         view.close();
 
         final List<EditorPartPresenter> openedEditors = new ArrayList<>();
-        for (EditorPartPresenter partPresenter : editorAgent.getOpenedEditors().values()) {
+        for (EditorPartPresenter partPresenter : editorAgent.getOpenedEditors()) {
             openedEditors.add(partPresenter);
         }
 

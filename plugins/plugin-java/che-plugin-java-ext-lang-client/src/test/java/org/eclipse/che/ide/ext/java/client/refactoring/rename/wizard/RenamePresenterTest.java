@@ -523,10 +523,10 @@ public class RenamePresenterTest {
         when(changeCreationResult.isCanShowPreviewPage()).thenReturn(true);
         when(refactoringStatus.getSeverity()).thenReturn(0);
         EditorPartPresenter openEditor = mock(EditorPartPresenter.class);
-        NavigableMap<String, EditorPartPresenter> openEditors = new TreeMap<>();
+        List<EditorPartPresenter> openEditors = new ArrayList<>();
         EditorInput editorInput = mock(EditorInput.class);
         VirtualFile virtualFile = mock(VirtualFile.class);
-        openEditors.put(TEXT, openEditor);
+        openEditors.add(openEditor);
         when(editorAgent.getOpenedEditors()).thenReturn(openEditors);
         when(openEditor.getEditorInput()).thenReturn(editorInput);
         when(editorInput.getFile()).thenReturn(virtualFile);
@@ -562,10 +562,10 @@ public class RenamePresenterTest {
         when(changeCreationResult.isCanShowPreviewPage()).thenReturn(true);
         when(refactoringStatus.getSeverity()).thenReturn(0);
         EditorPartPresenter openEditor = mock(EditorPartPresenter.class);
-        NavigableMap<String, EditorPartPresenter> openEditors = new TreeMap<>();
+        List<EditorPartPresenter> openEditors = new ArrayList<>();
         EditorInput editorInput = mock(EditorInput.class);
         VirtualFile virtualFile = mock(VirtualFile.class);
-        openEditors.put(TEXT, openEditor);
+        openEditors.add(openEditor);
         when(editorAgent.getOpenedEditors()).thenReturn(openEditors);
         when(openEditor.getEditorInput()).thenReturn(editorInput);
         when(editorInput.getFile()).thenReturn(virtualFile);

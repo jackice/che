@@ -120,8 +120,8 @@ public class PreviewPresenterTest {
 
     @Before
     public void setUp() throws Exception {
-        NavigableMap<String, EditorPartPresenter> editors = new TreeMap<>();
-        editors.put("", editor);
+        List<EditorPartPresenter> editors = new ArrayList<>();
+        editors.add(editor);
         when(editorAgent.getActiveEditor()).thenReturn(activeEditor);
         when(dtoFactory.createDto(RefactoringSession.class)).thenReturn(refactoringSession);
         when(dtoFactory.createDto(ChangeEnabledState.class)).thenReturn(changeEnableState);

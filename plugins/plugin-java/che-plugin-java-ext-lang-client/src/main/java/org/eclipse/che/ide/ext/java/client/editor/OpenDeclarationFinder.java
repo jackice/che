@@ -38,6 +38,7 @@ import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.rest.Unmarshallable;
 import org.eclipse.che.ide.util.loging.Log;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -101,12 +102,10 @@ public class OpenDeclarationFinder {
     }
 
     private void handleDescriptor(final OpenDeclarationDescriptor descriptor) {
-        Map<String, EditorPartPresenter> openedEditors = editorAgent.getOpenedEditors();
-        for (String s : openedEditors.keySet()) {
-            if (descriptor.getPath().equals(s)) {
-                EditorPartPresenter editorPartPresenter = openedEditors.get(s);
-                editorAgent.activateEditor(editorPartPresenter);
-                fileOpened(editorPartPresenter, descriptor.getOffset());
+        for (EditorPartPresenter openedEditor : editorAgent.getOpenedEditors()) {
+            if (descriptor.getPath().equals(openedEditor.getEditorInput().getFile().getPath())) {
+                editorAgent.activateEditor(openedEditor);
+                fileOpened(openedEditor, descriptor.getOffset());
                 return;
             }
         }
@@ -154,19 +153,19 @@ public class OpenDeclarationFinder {
     }
 
     private void openFile(VirtualFile result, final OpenDeclarationDescriptor descriptor) {
-        final Map<String, EditorPartPresenter> openedEditors = editorAgent.getOpenedEditors();
         Log.info(getClass(), result.getPath());
-        if (openedEditors.containsKey(result.getPath())) {
-            EditorPartPresenter editorPartPresenter = openedEditors.get(result.getPath());
-            editorAgent.activateEditor(editorPartPresenter);
-            fileOpened(editorPartPresenter, descriptor.getOffset());
-        } else {
-            editorAgent.openEditor(result, new OpenEditorCallbackImpl() {
-                @Override
-                public void onEditorOpened(EditorPartPresenter editor) {
-                    fileOpened(editor, descriptor.getOffset());
-                }
-            });
+        for (EditorPartPresenter openedEditor : editorAgent.getOpenedEditors()) {
+            if (openedEditor.getEditorInput().getFile().getPath().equals(result.getPath())) {
+                editorAgent.activateEditor(openedEditor);
+                fileOpened(openedEditor, descriptor.getOffset());
+            } else {
+                editorAgent.openEditor(result, new OpenEditorCallbackImpl() {
+                    @Override
+                    public void onEditorOpened(EditorPartPresenter editor) {
+                        fileOpened(editor, descriptor.getOffset());
+                    }
+                });
+            }
         }
     }
 
