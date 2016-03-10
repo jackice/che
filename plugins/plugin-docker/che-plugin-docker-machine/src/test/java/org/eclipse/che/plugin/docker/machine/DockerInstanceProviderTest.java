@@ -12,7 +12,6 @@ package org.eclipse.che.plugin.docker.machine;
 
 import org.eclipse.che.api.core.NotFoundException;
 import org.eclipse.che.api.core.model.machine.Machine;
-import org.eclipse.che.api.core.model.machine.MachineSource;
 import org.eclipse.che.api.core.model.machine.MachineStatus;
 import org.eclipse.che.api.core.model.machine.Recipe;
 import org.eclipse.che.api.core.model.machine.ServerConf;
@@ -52,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -116,6 +116,7 @@ public class DockerInstanceProviderTest {
 
         EnvironmentContext envCont = new EnvironmentContext();
         envCont.setUser(new UserImpl("user", "userId", USER_TOKEN, null, false));
+        envCont.setWorkspaceId(WORKSPACE_ID);
         EnvironmentContext.setCurrent(envCont);
 
         when(dockerMachineFactory.createNode(anyString(), anyString())).thenReturn(dockerNode);
@@ -1022,7 +1023,7 @@ public class DockerInstanceProviderTest {
     public void shouldGenerateValidNameForContainerFromPrefixWithInvalidCharacters() throws Exception {
         final String userName = "{use}r+";
         final String displayName = "displ{[ayName@";
-        EnvironmentContext.getCurrent().setUser(new UserImpl(userName));
+        EnvironmentContext.getCurrent().setUser(new UserImpl(userName, "id", "token", emptyList(), false));
         final String expectedPrefix = String.format("%s_%s_%s_", "user", "WORKSPACE_ID", "displayName");
 
         final String containerName = dockerInstanceProvider.generateContainerName("WORKSPACE_ID", displayName);
@@ -1132,7 +1133,7 @@ public class DockerInstanceProviderTest {
 
         ArgumentCaptor<ContainerConfig> argumentCaptor = ArgumentCaptor.forClass(ContainerConfig.class);
         verify(dockerConnector).createContainer(argumentCaptor.capture(), anyString());
-        assertEquals(new HashSet<>(asList(argumentCaptor.getValue().getEnv())), expectedEnv);
+        assertTrue(new HashSet<>(asList(argumentCaptor.getValue().getEnv())).containsAll(expectedEnv));
     }
 
     @Test
@@ -1163,7 +1164,7 @@ public class DockerInstanceProviderTest {
 
         ArgumentCaptor<ContainerConfig> argumentCaptor = ArgumentCaptor.forClass(ContainerConfig.class);
         verify(dockerConnector).createContainer(argumentCaptor.capture(), anyString());
-        assertEquals(new HashSet<>(asList(argumentCaptor.getValue().getEnv())), commonEnv);
+        assertTrue(new HashSet<>(asList(argumentCaptor.getValue().getEnv())).containsAll(commonEnv));
     }
 
     @Test
@@ -1199,7 +1200,7 @@ public class DockerInstanceProviderTest {
 
         ArgumentCaptor<ContainerConfig> argumentCaptor = ArgumentCaptor.forClass(ContainerConfig.class);
         verify(dockerConnector).createContainer(argumentCaptor.capture(), anyString());
-        assertEquals(new HashSet<>(asList(argumentCaptor.getValue().getEnv())), expectedEnv);
+        assertTrue(new HashSet<>(asList(argumentCaptor.getValue().getEnv())).containsAll(expectedEnv));
     }
 
     @Test
@@ -1230,170 +1231,69 @@ public class DockerInstanceProviderTest {
 
         ArgumentCaptor<ContainerConfig> argumentCaptor = ArgumentCaptor.forClass(ContainerConfig.class);
         verify(dockerConnector).createContainer(argumentCaptor.capture(), anyString());
-        assertEquals(new HashSet<>(asList(argumentCaptor.getValue().getEnv())), commonEnv);
+        assertTrue(new HashSet<>(asList(argumentCaptor.getValue().getEnv())).containsAll(commonEnv));
     }
 
     private void createInstanceFromRecipe() throws Exception {
-        createInstanceFromRecipe(false,
-                                 MEMORY_LIMIT_MB,
-                                 "machineId",
-                                 "userId",
-                                 WORKSPACE_ID,
-                                 DISPLAY_NAME,
-                                 new RecipeImpl().withType("Dockerfile")
-                                                 .withScript("FROM busybox"));
+        createInstanceFromRecipe(getMachineBuilder().build());
     }
 
     private void createInstanceFromRecipe(boolean isDev) throws Exception {
-        createInstanceFromRecipe(isDev, null, null, null, null, null, null);
+        createInstanceFromRecipe(getMachineBuilder().setConfig(getMachineConfigBuilder().setDev(isDev)
+                                                                                        .build())
+                                                    .build());
     }
 
     private void createInstanceFromRecipe(boolean isDev, String workspaceId) throws Exception {
-        createInstanceFromRecipe(isDev, null, null, null, workspaceId, null, null);
+        createInstanceFromRecipe(getMachineBuilder().setConfig(getMachineConfigBuilder().setDev(isDev)
+                                                                                        .build())
+                                                    .setWorkspaceId(workspaceId)
+                                                    .build());
     }
 
     private void createInstanceFromRecipe(int memorySizeInMB) throws Exception {
-        createInstanceFromRecipe(null, memorySizeInMB, null, null, null, null, null);
+        createInstanceFromRecipe(getMachineBuilder().setConfig(getMachineConfigBuilder().setLimits(new LimitsImpl(memorySizeInMB))
+                                                                                        .build())
+                                                    .build());
     }
 
-    private void createInstanceFromRecipe(Boolean isDev,
-                                          Integer memorySizeInMB,
-                                          String machineId,
-                                          String userId,
-                                          String workspaceId,
-                                          String displayName,
-                                          Recipe recipe) throws Exception {
-
-        createInstanceFromRecipe(isDev == null ? false : isDev,
-                                 memorySizeInMB == null ? MEMORY_LIMIT_MB : memorySizeInMB,
-                                 machineId == null ? "machineId" : machineId,
-                                 userId == null ? "userId" : userId,
-                                 workspaceId == null ? WORKSPACE_ID : workspaceId,
-                                 displayName == null ? DISPLAY_NAME : displayName,
-                                 recipe == null ? new RecipeImpl().withType("Dockerfile")
-                                                                  .withScript("FROM busybox") : recipe,
-                                 "machineType",
-                                 new MachineSourceImpl("source type", "source location"),
-                                 MachineStatus.CREATING);
+    private void createInstanceFromSnapshot(String repo, String tag, String registry) throws NotFoundException, MachineException {
+        createInstanceFromSnapshot(getMachineBuilder().build(), new DockerInstanceKey(repo, tag, "imageId", registry));
     }
 
-    private void createInstanceFromRecipe(boolean isDev,
-                                          int memorySizeInMB,
-                                          String machineId,
-                                          String userId,
-                                          String workspaceId,
-                                          String displayName,
-                                          Recipe recipe,
-                                          String machineType,
-                                          MachineSource machineSource,
-                                          MachineStatus machineStatus)
-            throws Exception {
-
-        dockerInstanceProvider.createInstance(recipe,
-                                              new MachineImpl(
-                                                      new MachineConfigImpl(isDev,
-                                                                            displayName,
-                                                                            machineType,
-                                                                            machineSource,
-                                                                            new LimitsImpl(memorySizeInMB),
-                                                                            asList(new ServerConfImpl("ref1", "8080", "https"),
-                                                                                   new ServerConfImpl("ref2", "9090/udp",
-                                                                                                      "someprotocol")),
-                                                                            Collections.singletonMap("key1", "value1")),
-                                                      machineId,
-                                                      workspaceId,
-                                                      "envName",
-                                                      userId,
-                                                      machineStatus,
-                                                      null),
-                                              LineConsumer.DEV_NULL);
-    }
-
-    private void createInstanceFromRecipe(Recipe recipe, Machine machine) throws Exception {
-
-        dockerInstanceProvider.createInstance(recipe,
+    private void createInstanceFromRecipe(Machine machine) throws Exception {
+        dockerInstanceProvider.createInstance(new RecipeImpl().withType("Dockerfile")
+                                                              .withScript("FROM busybox"),
                                               machine,
                                               LineConsumer.DEV_NULL);
     }
 
     private void createInstanceFromSnapshot() throws NotFoundException, MachineException {
-        createInstanceFromSnapshot(null, null, null, null, null, null, null, null, null);
+        createInstanceFromSnapshot(getMachineBuilder().build());
     }
 
     private void createInstanceFromSnapshot(int memorySizeInMB) throws NotFoundException, MachineException {
-        createInstanceFromSnapshot(null, null, null, null, memorySizeInMB, null, null, null, null);
+        createInstanceFromSnapshot(getMachineBuilder().setConfig(getMachineConfigBuilder().setLimits(new LimitsImpl(memorySizeInMB))
+                                                                                        .build())
+                                                    .build());
     }
 
     private void createInstanceFromSnapshot(boolean isDev) throws NotFoundException, MachineException {
-        createInstanceFromSnapshot(null, null, null, isDev, null, null, null, null, null);
+        createInstanceFromSnapshot(getMachineBuilder().setConfig(getMachineConfigBuilder().setDev(isDev)
+                                                                                        .build())
+                                                    .build());
     }
 
     private void createInstanceFromSnapshot(boolean isDev, String workspaceId) throws NotFoundException, MachineException {
-        createInstanceFromSnapshot(null, null, null, isDev, null, null, null, workspaceId, null);
+        createInstanceFromSnapshot(getMachineBuilder().setConfig(getMachineConfigBuilder().setDev(isDev)
+                                                                                          .build())
+                                                      .setWorkspaceId(workspaceId)
+                                                      .build());
     }
 
-    private void createInstanceFromSnapshot(String repo, String tag, String registry) throws NotFoundException, MachineException {
-        createInstanceFromSnapshot(repo, tag, registry, null, null, null, null, null, null);
-    }
-
-    private void createInstanceFromSnapshot(String repo,
-                                            String tag,
-                                            String registry,
-                                            Boolean isDev,
-                                            Integer memorySizeInMB,
-                                            String machineId,
-                                            String userId,
-                                            String workspaceId,
-                                            String displayName)
-            throws NotFoundException, MachineException {
-
-        createInstanceFromSnapshot(repo == null ? "repo" : repo,
-                                   tag == null ? "tag" : tag,
-                                   registry == null ? "localhost:1234" : registry,
-                                   isDev == null ? false : isDev,
-                                   memorySizeInMB == null ? MEMORY_LIMIT_MB : memorySizeInMB,
-                                   machineId == null ? "machineId" : machineId,
-                                   userId == null ? "userId" : userId,
-                                   workspaceId == null ? WORKSPACE_ID : workspaceId,
-                                   displayName == null ? DISPLAY_NAME : displayName,
-                                   "machineType",
-                                   new MachineSourceImpl("source type", "source location"),
-                                   MachineStatus.CREATING,
-                                   "envName");
-    }
-
-    private void createInstanceFromSnapshot(String repo,
-                                            String tag,
-                                            String registry,
-                                            boolean isDev,
-                                            int memorySizeInMB,
-                                            String machineId,
-                                            String userId,
-                                            String workspaceId,
-                                            String displayName,
-                                            String machineType,
-                                            MachineSource machineSource,
-                                            MachineStatus machineStatus,
-                                            String envName)
-            throws NotFoundException, MachineException {
-
-        dockerInstanceProvider.createInstance(new DockerInstanceKey(repo, tag, "imageId", registry),
-                                              new MachineImpl(
-                                                      new MachineConfigImpl(isDev,
-                                                                            displayName,
-                                                                            machineType,
-                                                                            machineSource,
-                                                                            new LimitsImpl(memorySizeInMB),
-                                                                            asList(new ServerConfImpl("ref1", "8080", "https"),
-                                                                                   new ServerConfImpl("ref2", "9090/udp",
-                                                                                                      "someprotocol")),
-                                                                            Collections.singletonMap("key1", "value1")),
-                                                      machineId,
-                                                      workspaceId,
-                                                      envName,
-                                                      userId,
-                                                      machineStatus,
-                                                      null),
+    private void createInstanceFromRecipe(Recipe recipe, Machine machine) throws Exception {
+        dockerInstanceProvider.createInstance(recipe,
+                                              machine,
                                               LineConsumer.DEV_NULL);
     }
 
@@ -1406,5 +1306,35 @@ public class DockerInstanceProviderTest {
                                                                     "localhost:1234"),
                                               machine,
                                               LineConsumer.DEV_NULL);
+    }
+
+    private void createInstanceFromSnapshot(Machine machine, DockerInstanceKey dockerInstanceKey)
+            throws NotFoundException, MachineException {
+
+        dockerInstanceProvider.createInstance(dockerInstanceKey,
+                                              machine,
+                                              LineConsumer.DEV_NULL);
+    }
+
+    private MachineImpl.MachineImplBuilder getMachineBuilder() {
+        return MachineImpl.builder().fromMachine(new MachineImpl(getMachineConfigBuilder().build(),
+                                                                 "machineId",
+                                                                 WORKSPACE_ID,
+                                                                 "envName",
+                                                                 "userId",
+                                                                 MachineStatus.CREATING,
+                                                                 null));
+    }
+
+    private MachineConfigImpl.MachineConfigImplBuilder getMachineConfigBuilder() {
+        return MachineConfigImpl.builder().fromConfig(new MachineConfigImpl(false,
+                                                                            DISPLAY_NAME,
+                                                                            "machineType",
+                                                                            new MachineSourceImpl("source type", "source location"),
+                                                                            new LimitsImpl(MEMORY_LIMIT_MB),
+                                                                            asList(new ServerConfImpl("ref1", "8080", "https"),
+                                                                                   new ServerConfImpl("ref2", "9090/udp",
+                                                                                                      "someprotocol")),
+                                                                            Collections.singletonMap("key1", "value1")));
     }
 }

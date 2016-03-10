@@ -6,7 +6,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *   Codenvy, S.A. - initial API and implementation
+ * Codenvy, S.A. - initial API and implementation
  *******************************************************************************/
 package org.eclipse.che.plugin.docker.machine;
 
@@ -54,6 +54,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -83,8 +84,8 @@ public class DockerInstanceProvider implements InstanceProvider {
     private final Map<String, Map<String, String>> commonMachinePortsToExpose;
     private final String[]                         devMachineSystemVolumes;
     private final String[]                         commonMachineSystemVolumes;
-    private final String[]                         devMachineEnvVariables;
-    private final String[]                         commonMachineEnvVariables;
+    private final Set<String>                      devMachineEnvVariables;
+    private final Set<String>                      commonMachineEnvVariables;
     private final String[]                         allMachinesExtraHosts;
     private final String                           projectFolderPath;
 
@@ -136,12 +137,12 @@ public class DockerInstanceProvider implements InstanceProvider {
 
         allMachinesEnvVariables = filterEmptyAndNullValues(allMachinesEnvVariables);
         devMachineEnvVariables = filterEmptyAndNullValues(devMachineEnvVariables);
-        this.commonMachineEnvVariables = allMachinesEnvVariables.toArray(new String[allMachinesEnvVariables.size()]);
+        this.commonMachineEnvVariables = allMachinesEnvVariables;
         final HashSet<String> envVariablesForDevMachine = Sets.newHashSetWithExpectedSize(allMachinesEnvVariables.size() +
                                                                                           devMachineEnvVariables.size());
         envVariablesForDevMachine.addAll(allMachinesEnvVariables);
         envVariablesForDevMachine.addAll(devMachineEnvVariables);
-        this.devMachineEnvVariables = envVariablesForDevMachine.toArray(new String[envVariablesForDevMachine.size()]);
+        this.devMachineEnvVariables = envVariablesForDevMachine;
 
         // always add the docker host
         String dockerHost = DockerInstanceRuntimeInfo.CHE_HOST.concat(":").concat(dockerConnectorConfiguration.getDockerHostIp());
@@ -255,7 +256,8 @@ public class DockerInstanceProvider implements InstanceProvider {
             throw new InvalidRecipeException("Unable build docker based machine, Dockerfile found but it doesn't contain base image.");
         }
         if (dockerfile.getImages().size() > 1) {
-            throw new InvalidRecipeException("Unable build docker based machine, Dockerfile found but it contains more than one instruction 'FROM'.");
+            throw new InvalidRecipeException(
+                    "Unable build docker based machine, Dockerfile found but it contains more than one instruction 'FROM'.");
         }
         return dockerfile;
     }
@@ -383,7 +385,7 @@ public class DockerInstanceProvider implements InstanceProvider {
         try {
             final Map<String, Map<String, String>> portsToExpose;
             final String[] volumes;
-            final String[] env;
+            final List<String> env;
             if (machine.getConfig().isDev()) {
                 portsToExpose = devMachinePortsToExpose;
 
@@ -393,15 +395,20 @@ public class DockerInstanceProvider implements InstanceProvider {
                 volumes = ObjectArrays.concat(devMachineSystemVolumes,
                                               SystemInfo.isWindows() ? escapePath(projectFolderVolume) : projectFolderVolume);
 
-                String[] vars = {DockerInstanceRuntimeInfo.CHE_WORKSPACE_ID + '=' + machine.getWorkspaceId(),
-                                 DockerInstanceRuntimeInfo.USER_TOKEN + '=' + EnvironmentContext.getCurrent().getUser().getToken()};
-                env = ObjectArrays.concat(devMachineEnvVariables, vars, String.class);
-
+                env = new ArrayList<>(devMachineEnvVariables);
+                env.add(DockerInstanceRuntimeInfo.CHE_WORKSPACE_ID + '=' + machine.getWorkspaceId());
+                env.add(DockerInstanceRuntimeInfo.USER_TOKEN + '=' + EnvironmentContext.getCurrent().getUser().getToken());
             } else {
                 portsToExpose = commonMachinePortsToExpose;
                 volumes = commonMachineSystemVolumes;
-                env = commonMachineEnvVariables;
+                env = new ArrayList<>(commonMachineEnvVariables);
             }
+            machine.getConfig()
+                   .getEnvVariables()
+                   .entrySet()
+                   .stream()
+                   .map(entry -> entry.getKey() + "=" + entry.getValue())
+                   .forEach(env::add);
 
             final HostConfig hostConfig = new HostConfig().withBinds(volumes)
                                                           .withExtraHosts(allMachinesExtraHosts)
@@ -411,7 +418,7 @@ public class DockerInstanceProvider implements InstanceProvider {
             final ContainerConfig config = new ContainerConfig().withImage(imageName)
                                                                 .withExposedPorts(portsToExpose)
                                                                 .withHostConfig(hostConfig)
-                                                                .withEnv(env);
+                                                                .withEnv(env.toArray(new String[env.size()]));
 
             final String containerId = docker.createContainer(config, containerName).getId();
 

@@ -154,6 +154,7 @@ public class MachineImpl implements Machine {
             this.machineRuntime = machine.getRuntime();
             this.machineStatus = machine.getStatus();
             this.owner = machine.getOwner();
+            this.workspaceId = machine.getWorkspaceId();
             return this;
         }
 
