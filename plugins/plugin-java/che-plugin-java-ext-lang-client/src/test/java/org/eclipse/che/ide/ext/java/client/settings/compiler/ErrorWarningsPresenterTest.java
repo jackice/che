@@ -14,11 +14,11 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 
 import org.eclipse.che.api.promises.client.Operation;
 import org.eclipse.che.api.promises.client.Promise;
+import org.eclipse.che.ide.api.preferences.PreferencePagePresenter.DirtyStateListener;
+import org.eclipse.che.ide.api.preferences.PreferencesManager;
 import org.eclipse.che.ide.ext.java.client.JavaLocalizationConstant;
 import org.eclipse.che.ide.ext.java.client.inject.factories.PropertyWidgetFactory;
 import org.eclipse.che.ide.ext.java.client.settings.property.PropertyWidget;
-import org.eclipse.che.ide.ext.java.client.settings.service.SettingsServiceClient;
-import org.eclipse.che.ide.settings.common.SettingsPagePresenter.DirtyStateListener;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,11 +74,11 @@ public class ErrorWarningsPresenterTest {
     @Mock
     private ErrorWarningsView        view;
     @Mock
-    private SettingsServiceClient    service;
-    @Mock
     private PropertyWidgetFactory    propertyFactory;
     @Mock
     private JavaLocalizationConstant locale;
+    @Mock
+    private PreferencesManager       preferencesManager;
 
     @Mock
     private DirtyStateListener           dirtyStateListener;
@@ -99,8 +99,8 @@ public class ErrorWarningsPresenterTest {
 
     @Before
     public void setUp() {
+        when(preferencesManager.loadPreferences()).thenReturn(mapPromise);
         when(propertyFactory.create(Matchers.<ErrorWarningsOptions>anyObject())).thenReturn(widget);
-        when(service.getCompileParameters()).thenReturn(mapPromise);
 
         presenter.setUpdateDelegate(dirtyStateListener);
 
@@ -125,8 +125,6 @@ public class ErrorWarningsPresenterTest {
 
         presenter.storeChanges();
 
-        verify(service).applyCompileParameters(Matchers.<Map<String, String>>anyObject());
-
         assertThat(presenter.isDirty(), equalTo(false));
     }
 
@@ -143,8 +141,6 @@ public class ErrorWarningsPresenterTest {
         presenter.revertChanges();
 
         verify(widget, times(18)).selectPropertyValue(anyString());
-
-        assertThat(presenter.isDirty(), equalTo(false));
     }
 
     private Map<String, String> getAllProperties() {
@@ -177,8 +173,6 @@ public class ErrorWarningsPresenterTest {
         presenter.onPropertyChanged(COMPILER_UNUSED_IMPORT.toString(), VALUE_2);
 
         verify(dirtyStateListener).onDirtyChanged();
-
-        assertThat(presenter.isDirty(), equalTo(true));
     }
 
     @Test
