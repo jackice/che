@@ -56,6 +56,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -387,7 +388,7 @@ public class DockerInstanceProvider implements InstanceProvider {
             final String[] volumes;
             final List<String> env;
             if (machine.getConfig().isDev()) {
-                portsToExpose = devMachinePortsToExpose;
+                portsToExpose = new HashMap<>(devMachinePortsToExpose);
 
                 final String projectFolderVolume = String.format("%s:%s",
                                                                  workspaceFolderPathProvider.getPath(machine.getWorkspaceId()),
@@ -399,10 +400,15 @@ public class DockerInstanceProvider implements InstanceProvider {
                 env.add(DockerInstanceRuntimeInfo.CHE_WORKSPACE_ID + '=' + machine.getWorkspaceId());
                 env.add(DockerInstanceRuntimeInfo.USER_TOKEN + '=' + EnvironmentContext.getCurrent().getUser().getToken());
             } else {
-                portsToExpose = commonMachinePortsToExpose;
+                portsToExpose = new HashMap<>(commonMachinePortsToExpose);
                 volumes = commonMachineSystemVolumes;
                 env = new ArrayList<>(commonMachineEnvVariables);
             }
+            machine.getConfig()
+                   .getServers()
+                   .stream()
+                   .forEach(serverConf -> portsToExpose.put(serverConf.getPort(), Collections.emptyMap()));
+
             machine.getConfig()
                    .getEnvVariables()
                    .entrySet()
